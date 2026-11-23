@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wind Maps</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0E1310">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wind Maps">
+<link rel="apple-touch-icon" href="./icon-180.png"><link rel="icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Same dark "field glass" look as the maps. One list, one job: which property has the right wind, then tap in. */
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+ --bg:#0E1310;--row:#141B16;--ink:#EEF2EA;--muted:#A3AE9F;--line:#2D3830;--accent:#FF7A3D;--good:#6FCF7A;--warn:#E8B23A;--bad:#F0603C;--cool:#7CC8FF;
+ --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+main{max-width:620px;margin:0 auto;padding:20px 16px 32px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
+h1{font:700 40px/1 var(--display);margin:0;letter-spacing:.01em}
+#status{font-size:13px;color:var(--muted);text-align:right}
+button.ref{font:600 14px var(--body);color:var(--ink);background:var(--row);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;margin-top:6px}
+button.ref:focus-visible,a.prop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+a.prop{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;text-decoration:none;color:inherit;background:var(--row);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px}
+a.prop:active{background:#1A231D}
+.name{font:600 26px/1.05 var(--display)}
+.now{display:flex;align-items:center;gap:10px;grid-row:span 2}
+.arrow{width:40px;height:40px;transition:transform .6s ease}
+.spd{font:700 30px/1 var(--display);text-align:right}.spd small{display:block;font:500 12px var(--body);color:var(--muted)}
+.windows{display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.windows b{color:var(--ink);font-weight:600}
+.tag{font:600 12px var(--body);border-radius:5px;padding:1px 6px;margin-left:4px}
+.t-best{background:rgba(111,207,122,.18);color:var(--good)}.t-good{background:rgba(111,207,122,.1);color:#A8E2AE}
+.t-ok{background:rgba(232,178,58,.14);color:var(--warn)}.t-poor{background:rgba(240,96,60,.14);color:#FF9C80}.t-calm{background:rgba(124,200,255,.14);color:var(--cool)}
+footer{margin-top:22px;font-size:12.5px;color:var(--muted)}footer a{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.arrow{transition:none}}
+</style></head><body><main>
+<header><h1>Wind Maps</h1><div><div id="status">Getting wind…</div><button class="ref" id="ref" type="button">Refresh</button></div></header>
+<ul id="list"></ul>
+<footer>Arrows point the way the wind is blowing. Ratings come from each map’s ground-spot runs; Coon Creek and Sauk 40 have none yet. Weather: <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0.</footer>
+</main>
+<script>
+const P=[{slug:'home',name:'Home',lat:43.209,lon:-89.7166},{slug:'coon',name:'Coon Creek',lat:43.7617,lon:-90.9253},{slug:'sauk',name:'Sauk 40',lat:43.3242,lon:-89.9395},{slug:'stumptown',name:'Stumptown Rd',lat:42.7396,lon:-90.5343},{slug:'mckenna',name:'McKenna Rd',lat:42.8519,lon:-89.8903}];
+// [morning, evening] verdict per wind, from the saved ground-spot runs
+const R={
+ home:{S:['best','best'],SE:['best','best'],SW:['good','good'],W:['ok','ok'],E:['ok','ok'],N:['poor','poor'],NE:['poor','poor'],NW:['poor','poor']},
+ stumptown:{SW:['best','best'],W:['best','best'],NW:['best','best'],N:['good','good'],NE:['good','poor'],E:['good','ok'],SE:['good','poor'],S:['ok','poor']},
+ mckenna:{NE:['best','best'],E:['best','best'],N:['good','good'],SE:['good','good'],S:['ok','ok'],NW:['good','ok'],SW:['poor','poor'],W:['poor','poor']}};
+const WORD={best:'Best',good:'Good',ok:'Fair',poor:'Poor'};
+const C8=['N','NE','E','SE','S','SW','W','NW'];const c8=d=>C8[Math.round(((d%360)+360)%360/45)%8];
+const $=id=>document.getElementById(id),KEY='hub_fc';
+function arrow(dir){return `<svg class="arrow" viewBox="-20 -20 40 40" style="transform:rotate(${dir+180}deg)" aria-hidden="true"><circle r="19" fill="none" stroke="#2D3830" stroke-width="2"/><path d="M0-14 L7 6 L0 2 L-7 6Z" fill="#FF7A3D"/></svg>`}
+function tag(slug,spd,dir,i){if(spd<2)return '<span class="tag t-calm">Calm</span>';const r=R[slug];if(!r)return '';const v=r[c8(dir)][i];return `<span class="tag t-${v}">${WORD[v]}</span>`}
+function nextAt(H,hr,off){const now=Date.now();for(let i=0;i<H.time.length;i++){if(+H.time[i].slice(11,13)===hr&&Date.parse(H.time[i]+':00Z')-off*1000>now-30*60000)return i}return -1}
+function render(data){const L=$('list');L.innerHTML=P.map((p,k)=>{const d=data&&data[k];if(!d)return `<li><a class="prop" href="./${p.slug}.html"><div class="name">${p.name}</div><div class="windows">No forecast saved yet</div></a></li>`;
+ const c=d.current,H=d.hourly,w=[[7,'Morning',0],[16,'Evening',1]].map(([hr,lab,i])=>{const j=nextAt(H,hr,d.utc_offset_seconds||0);if(j<0)return '';const s=H.wind_speed_10m[j],r=H.wind_direction_10m[j];
+  const dd=H.time[j].slice(0,10),day=dd===c.time.slice(0,10)?'':new Date(dd+'T12:00Z').toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'})+' ';
+  return `<span>${day}${lab} <b>${s<2?'Calm':c8(r)+' '+Math.round(s)}</b>${tag(p.slug,s,r,i)}</span>`}).join('');
+ return `<li><a class="prop" href="./${p.slug}.html"><div class="name">${p.name}</div><div class="now">${arrow(c.wind_direction_10m)}<div class="spd">${c.wind_speed_10m<2?'Calm':c8(c.wind_direction_10m)+' '+Math.round(c.wind_speed_10m)}<small>gust ${Math.round(c.wind_gusts_10m)} · ${Math.round(c.temperature_2m)}°</small></div></div><div class="windows">${w}</div></a></li>`}).join('')}
+function ago(t){const m=Math.round((Date.now()-t)/60000);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' hr ago'}
+let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+if(saved){render(saved.data);$('status').textContent='Saved '+ago(saved.t)}else render(null);
+async function pull(){$('status').textContent='Getting wind…';
+ const u='https://api.open-meteo.com/v1/forecast?latitude='+P.map(p=>p.lat)+'&longitude='+P.map(p=>p.lon)+'&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FChicago&forecast_days=3';
+ try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();saved={t:Date.now(),data};try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}render(data);$('status').textContent='Updated just now'}
+ catch(e){$('status').textContent=navigator.onLine===false?'No signal'+(saved?', showing wind from '+ago(saved.t):''):'Couldn’t reach Open-Meteo'+(saved?', showing wind from '+ago(saved.t):'')}}
+$('ref').onclick=pull;pull();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(!saved||Date.now()-saved.t>15*60000))pull()});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script></body></html>
