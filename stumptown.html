@@ -315,7 +315,7 @@ function computeCheck(){if(!TRV)return;CHK.fill(0);CHKmax=0;
   if(c>CHKmax)CHKmax=c}}
 function chkAt(u,v){const i=Math.min(GW-1,Math.max(0,(u*GW)|0)),j=Math.min(GH-1,Math.max(0,(v*GH)|0));return CHK[j*GW+i]}
 function trvAt(u,v){const i=Math.min(GW-1,Math.max(0,(u*GW)|0)),j=Math.min(GH-1,Math.max(0,(v*GH)|0)),k=j*GW+i;return [TRV.F[k]/255,TRV.R[k]/255,TRV.B[k]/255]}
-const st={date:null,min:0,manual:false,mDir:180,mSpd:6,tex:'aerial',flow:true,cams:true,stands:true,lines:true,exag:1,standFt:0,thermals:true,scentMap:true,colorBy:'air',sel:null,allPlumes:false,panel:'time',playing:false,travel:DATA.travel?'all':'off',habOn:!!DATA.habitat,hab:{water:true,plot:true,orchard:true,oak:true,bedding:true,scrape:true,screen:true,access:true}};
+const st={date:null,min:0,manual:false,mDir:180,mSpd:6,tex:'aerial',flow:true,cams:true,stands:true,lines:true,exag:1,standFt:0,thermals:true,scentMap:true,colorBy:'air',sel:null,allPlumes:false,panel:'time',playing:false,travel:'off',habOn:false,hab:{water:true,plot:true,orchard:true,oak:true,bedding:true,scrape:true,screen:true,access:true}};
 st.rel=false;const nw=localNow();st.date=nw.date;st.min=Math.round(nw.min/5)*5;
 
 // ---------- field ----------
