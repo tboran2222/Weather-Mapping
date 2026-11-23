@@ -1,5 +1,5 @@
 // Keeps the maps usable with no signal. Weather is never cached here; each page saves its own last forecast.
-const V='wind-maps-v1';
+const V='wind-maps-v3';
 const CORE=['./','./index.html','./home.html','./coon.html','./sauk.html','./stumptown.html','./mckenna.html','./manifest.webmanifest','./icon-180.png','./icon-192.png','./icon-512.png',
  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(CORE.map(u=>c.add(new Request(u,{mode:u.startsWith('http')?'no-cors':'same-origin'})).catch(()=>{}))))).then(()=>self.skipWaiting())});
